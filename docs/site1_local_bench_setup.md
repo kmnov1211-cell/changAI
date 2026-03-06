@@ -177,6 +177,7 @@ import yaml
 import frappe
 from pathlib import Path
 from frappe.utils.file_manager import save_file
+import base64
 
 app_path = Path(frappe.get_app_path("changai"))
 assets_dir = app_path / "changai" / "api" / "v2" / "assets"
@@ -234,13 +235,54 @@ master_data = {
 }
 master_data_yaml = yaml.safe_dump(master_data, sort_keys=False, allow_unicode=True)
 
-# Save into Home/RAG Sources
-save_file("tables.json", tables_json.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
-save_file("schema.yaml", schema_yaml.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
-save_file("master_data.yaml", master_data_yaml.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
+# Save into Home/RAG Sources (compatible with save_file signatures that require dt/dn)
+def _upsert_file(file_name: str, content_bytes: bytes):
+    existing = frappe.db.get_value(
+        "File",
+        {"file_name": file_name, "folder": "Home/RAG Sources"},
+        "name",
+    )
+    if existing:
+        frappe.delete_doc("File", existing, force=1, ignore_permissions=True)
+
+    # Some Frappe versions require dt and dn positional args
+    save_file(file_name, content_bytes, None, None, folder="Home/RAG Sources", is_private=1)
+
+_upsert_file("tables.json", tables_json.encode("utf-8"))
+_upsert_file("schema.yaml", schema_yaml.encode("utf-8"))
+_upsert_file("master_data.yaml", master_data_yaml.encode("utf-8"))
 
 frappe.db.commit()
 print("Uploaded: tables.json, schema.yaml, master_data.yaml to Home/RAG Sources")
+```
+
+If you still get `save_file` argument errors, use this fallback (File DocType insert):
+
+```python
+import base64
+
+def _upsert_file_doc(file_name: str, text_content: str):
+    existing = frappe.db.get_value(
+        "File",
+        {"file_name": file_name, "folder": "Home/RAG Sources"},
+        "name",
+    )
+    if existing:
+        frappe.delete_doc("File", existing, force=1, ignore_permissions=True)
+
+    frappe.get_doc({
+        "doctype": "File",
+        "file_name": file_name,
+        "folder": "Home/RAG Sources",
+        "is_private": 1,
+        "content": text_content,
+        "decode": False,
+    }).insert(ignore_permissions=True)
+
+_upsert_file_doc("tables.json", tables_json)
+_upsert_file_doc("schema.yaml", schema_yaml)
+_upsert_file_doc("master_data.yaml", master_data_yaml)
+frappe.db.commit()
 ```
 
 Now rerun:
