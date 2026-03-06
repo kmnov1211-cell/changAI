@@ -357,7 +357,8 @@ Each store folder should contain:
 
 ## 3.3) Right bench-console code (copy/paste)
 
-Use this exact code in `bench --site site1.local console` when files are missing and `save_file` signatures differ:
+Use this exact code in `bench --site site1.local console` when files are missing and `save_file` signatures differ.
+It also auto-creates missing Folder path `Home/RAG Sources` to avoid `LinkValidationError`.
 
 ```python
 import json
@@ -400,7 +401,27 @@ master_data = {
 }
 master_data_yaml = yaml.safe_dump(master_data, sort_keys=False, allow_unicode=True)
 
-# Version-safe upload via File DocType (avoids save_file signature issues)
+# Ensure folder path exists: Home/RAG Sources
+def ensure_folder_path(path: str = "Home/RAG Sources"):
+    parts = path.split("/")
+    current = parts[0]  # Home
+    for part in parts[1:]:
+        next_path = f"{current}/{part}"
+        exists = frappe.db.exists("File", {"file_name": part, "folder": current, "is_folder": 1})
+        if not exists:
+            frappe.get_doc({
+                "doctype": "File",
+                "file_name": part,
+                "is_folder": 1,
+                "folder": current,
+            }).insert(ignore_permissions=True)
+        current = next_path
+
+ensure_folder_path("Home/RAG Sources")
+
+# Version-safe upload using save_file signature that may require dt/dn
+from frappe.utils.file_manager import save_file
+
 def upsert_rag_file(file_name: str, content: str):
     existing = frappe.db.get_value(
         "File",
@@ -410,14 +431,14 @@ def upsert_rag_file(file_name: str, content: str):
     if existing:
         frappe.delete_doc("File", existing, force=1, ignore_permissions=True)
 
-    frappe.get_doc({
-        "doctype": "File",
-        "file_name": file_name,
-        "folder": "Home/RAG Sources",
-        "is_private": 1,
-        "content": content,
-        "decode": False,
-    }).insert(ignore_permissions=True)
+    save_file(
+        file_name,
+        content.encode("utf-8"),
+        None,
+        None,
+        folder="Home/RAG Sources",
+        is_private=1,
+    )
 
 upsert_rag_file("tables.json", tables_json)
 upsert_rag_file("schema.yaml", schema_yaml)
