@@ -161,6 +161,14 @@ sites/<your-site>/private/changai/fvs_stores/erpnext/
 └── masterdata_fvs/
 ```
 
+After running `build_all_fvs()`, keep a long worker running to process queued jobs:
+
+```bash
+bench worker --queue long
+```
+
+Then verify each folder contains `index.faiss` and `index.pkl`.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  

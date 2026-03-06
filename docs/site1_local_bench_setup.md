@@ -75,6 +75,57 @@ Required files in **Home/RAG Sources**:
 - `schema.yaml`
 - `master_data.yaml`
 
+### What to do next after `build_all_fvs()` returns `{"status": "enqueued"}`
+
+1) Keep long worker running in a separate terminal:
+
+```bash
+cd ~/frappe-bench
+bench worker --queue long
+```
+
+2) Watch logs for progress/failures:
+
+```bash
+cd ~/frappe-bench
+bench --site site1.local logs --web
+bench --site site1.local show-pending-jobs
+```
+
+3) Check Error Log in Desk (if anything fails):
+
+- Go to **Awesome Bar → Error Log**
+- Filter by titles:
+  - `Build Table FVS Failed`
+  - `Build Schema FVS Failed`
+  - `Build Master Data FVS Failed`
+
+4) Verify index folders were created on disk:
+
+```bash
+cd ~/frappe-bench
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/table_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/schema_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/masterdata_fvs/
+```
+
+Expected each folder to contain `index.faiss` and `index.pkl`.
+
+5) Optional quick verification from bench console:
+
+```bash
+bench --site site1.local console
+```
+
+```python
+import os
+base = 'sites/site1.local/private/changai/fvs_stores/erpnext'
+for d in ['table_fvs', 'schema_fvs', 'masterdata_fvs']:
+    p = os.path.join(base, d)
+    print(d, os.path.exists(p), os.listdir(p) if os.path.exists(p) else [])
+```
+
 ---
 
 ## 4) Create a read-only DB user (recommended)
