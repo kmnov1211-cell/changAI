@@ -693,6 +693,80 @@ If jobs are finishing with `Job OK`, you can proceed. Restarting worker often cl
 
 ---
 
+
+## 3.7) Partial success: `table_fvs` + `masterdata_fvs` exist but `schema_fvs` is empty
+
+If you see:
+- `table_fvs/index.faiss` + `index.pkl` present
+- `masterdata_fvs/index.faiss` + `index.pkl` present
+- `schema_fvs/` exists but has no index files
+
+then only schema job failed or produced 0 docs.
+
+### A) Run schema job directly to get immediate traceback
+
+```bash
+cd ~/trackerr
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_schema_fvs_job
+build_schema_fvs_job()
+```
+
+### B) Validate `schema.yaml` exists and has `tables:` with fields
+
+```python
+import frappe, yaml
+name = frappe.db.get_value("File", {"file_name": "schema.yaml", "folder": "Home/RAG Sources"}, "name")
+print("file doc:", name)
+content = frappe.get_doc("File", name).get_content()
+obj = yaml.safe_load(content)
+print("has tables:", isinstance(obj, dict) and 'tables' in obj)
+print("tables count:", len(obj.get('tables', [])) if isinstance(obj, dict) else 0)
+if isinstance(obj, dict) and obj.get('tables'):
+    print("sample:", obj['tables'][0])
+```
+
+`schema.yaml` must be shaped like:
+
+```yaml
+tables:
+  - table: tabSales Invoice
+    module: Selling
+    fields:
+      - name: posting_date
+        description: Posting date
+```
+
+### C) Re-enqueue all jobs after fixing schema
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs())
+```
+
+Run worker:
+
+```bash
+cd ~/trackerr
+bench worker --queue long
+```
+
+### D) Final check
+
+```bash
+cd ~/trackerr
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/schema_fvs/
+```
+
+Expected files:
+- `index.faiss`
+- `index.pkl`
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
