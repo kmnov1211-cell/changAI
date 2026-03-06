@@ -545,6 +545,78 @@ Each folder should contain `index.faiss` and `index.pkl`.
 
 ---
 
+
+## 3.5) Fix `ImportError` from `sentence_transformers` / `transformers` (Python 3.14 env)
+
+If you see errors like:
+- `ImportError: cannot import name 'is_flash_attention_requested' from transformers.utils.generic`
+- `ImportError: Could not import sentence_transformers python package`
+
+this is typically a **mixed/incompatible package set** in bench env (often after partial upgrades), and can be worse on Python 3.14.
+
+### A) Check current versions in bench env
+
+```bash
+cd ~/frappe-bench
+./env/bin/python -V
+./env/bin/pip show sentence-transformers transformers langchain-huggingface safetensors tokenizers | sed -n '1,120p'
+```
+
+### B) Clean reinstall compatible embedding stack
+
+```bash
+cd ~/frappe-bench
+./env/bin/pip uninstall -y sentence-transformers transformers tokenizers safetensors huggingface-hub
+./env/bin/pip install --no-cache-dir   "huggingface-hub>=0.23,<1.0"   "tokenizers>=0.20,<0.22"   "safetensors>=0.5.3"   "transformers>=4.52,<4.58"   "sentence-transformers>=5.2.3"   "langchain-huggingface>=0.1.2"
+```
+
+### C) Sanity import test before running worker jobs
+
+```bash
+cd ~/frappe-bench
+./env/bin/python - <<'PY2'
+import sentence_transformers, transformers, safetensors
+print('sentence-transformers', sentence_transformers.__version__)
+print('transformers', transformers.__version__)
+print('safetensors', safetensors.__version__)
+PY2
+```
+
+### D) Recreate embedding model directory and test in bench console
+
+```bash
+cd ~/frappe-bench
+rm -rf apps/changai/changai/changai/model
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.text2sql_pipeline_v2 import download_model_from_ui, get_embedding_engine
+print(download_model_from_ui())
+emb = get_embedding_engine()
+print(type(emb))
+```
+
+### E) Re-run FAISS build jobs
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs())
+```
+
+And in another terminal:
+
+```bash
+cd ~/frappe-bench
+bench worker --queue long
+```
+
+### F) If still broken on Python 3.14
+
+Create a fresh bench on Python **3.11 or 3.12** and install apps there; current ML stack is generally better tested on those versions.
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:

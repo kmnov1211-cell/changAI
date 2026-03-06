@@ -172,6 +172,9 @@ Then verify each folder contains `index.faiss` and `index.pkl`.
 If worker logs show `safetensors_rust.SafetensorError: header too large` or SentenceTransformers version mismatch,
 update bench env packages and re-download the embedding model before retrying index build.
 
+If you see `cannot import name 'is_flash_attention_requested'` from `transformers.utils.generic`,
+your `sentence-transformers` / `transformers` versions are inconsistent. Reinstall a compatible set in the bench env.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  
