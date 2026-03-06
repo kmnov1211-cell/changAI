@@ -460,6 +460,91 @@ bench worker --queue long
 ```
 
 
+
+## 3.4) Fix `safetensors header too large` / SentenceTransformer version mismatch
+
+If worker logs show errors like:
+- `safetensors_rust.SafetensorError: Error while deserializing header: header too large`
+- `model was created with Sentence Transformers 5.2.3, but you are using 5.1.2`
+
+then your local embedding model files are usually corrupted/incomplete or your Python packages are older than the model metadata.
+
+### A) Stop worker and update python packages in bench env
+
+```bash
+cd ~/frappe-bench
+# Stop running worker with Ctrl+C first
+./env/bin/pip install -U "sentence-transformers>=5.2.3" "transformers>=4.52" "safetensors>=0.5.3"
+```
+
+### B) Remove local cached embedding model folder
+
+```bash
+cd ~/frappe-bench
+rm -rf apps/changai/changai/changai/model
+```
+
+### C) Re-download model from bench console
+
+```bash
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.text2sql_pipeline_v2 import download_model_from_ui
+print(download_model_from_ui())
+```
+
+Expected:
+
+```python
+{'status': 'success', 'message': 'Embedding model downloaded successfully.'}
+```
+
+### D) Validate embedding loads before enqueueing jobs
+
+```python
+from changai.changai.api.v2.text2sql_pipeline_v2 import get_embedding_engine
+emb = get_embedding_engine()
+print(type(emb))
+```
+
+If this works, your worker should no longer fail at model load step.
+
+### E) Start long worker and enqueue again
+
+Terminal 1:
+
+```bash
+cd ~/frappe-bench
+bench worker --queue long
+```
+
+Terminal 2:
+
+```bash
+cd ~/frappe-bench
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs())
+```
+
+### F) Re-verify generated indexes
+
+```bash
+cd ~/frappe-bench
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/table_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/schema_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/masterdata_fvs/
+```
+
+Each folder should contain `index.faiss` and `index.pkl`.
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:

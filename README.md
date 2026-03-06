@@ -169,6 +169,9 @@ bench worker --queue long
 
 Then verify each folder contains `index.faiss` and `index.pkl`.
 
+If worker logs show `safetensors_rust.SafetensorError: header too large` or SentenceTransformers version mismatch,
+update bench env packages and re-download the embedding model before retrying index build.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  
