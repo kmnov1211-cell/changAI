@@ -178,6 +178,9 @@ your `sentence-transformers` / `transformers` versions are inconsistent. Reinsta
 Ensure **Git LFS** is installed before downloading embedding models (`git lfs install`),
 otherwise safetensors files may be cloned as pointer text and fail to load.
 
+If worker logs show `Job OK` but also version/semaphore warnings, prioritize job status and output files first.
+Then align package versions to reduce future instability.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  

@@ -647,6 +647,52 @@ Create a fresh bench on Python **3.11 or 3.12** and install apps there; current 
 
 ---
 
+
+## 3.6) If you see warnings but job status is `Job OK`
+
+If worker output shows:
+- `Successfully completed ... Job OK`
+- plus warnings like:
+  - `model was created with Sentence Transformers 5.2.3, but you're using 5.1.2`
+  - `resource_tracker: leaked semaphore objects`
+
+then treat it as:
+- ✅ **Index build succeeded** for that job.
+- ⚠️ You still should clean up package mismatch to avoid future instability.
+
+### A) First verify files are really generated
+
+```bash
+cd ~/trackerr
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/table_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/schema_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/masterdata_fvs/
+```
+
+Each folder should contain `index.faiss` and `index.pkl`.
+
+### B) Align sentence-transformers to model version (recommended)
+
+```bash
+cd ~/trackerr
+./env/bin/pip install -U "sentence-transformers>=5.2.3" "transformers>=4.52" "safetensors>=0.5.3"
+```
+
+Then restart worker:
+
+```bash
+cd ~/trackerr
+bench restart
+bench worker --queue long
+```
+
+### C) About leaked semaphore warnings
+
+`resource_tracker` warnings are usually from multiprocessing cleanup on shutdown.
+If jobs are finishing with `Job OK`, you can proceed. Restarting worker often clears them.
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
