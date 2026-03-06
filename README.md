@@ -141,16 +141,24 @@ Go to **ERPNext → ChangAI Settings**
 ### 3. Build FAISS Indexes (Required)
 
 ```python
-from changai.changai.api.v2.build_schema_entity_faiss_indexes import build_all_indexes
-build_all_indexes()
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+build_all_fvs()
 ```
 
-This creates:
+This enqueues background jobs to build table/schema/master-data FAISS stores.
+
+The source files must be uploaded in **Home/RAG Sources** as:
+- `tables.json`
+- `schema.yaml`
+- `master_data.yaml`
+
+Vector stores are saved under the site path:
 
 ```
-changai/api/fvs_stores/
+sites/<your-site>/private/changai/fvs_stores/erpnext/
+├── table_fvs/
 ├── schema_fvs/
-└── entity_fvs/
+└── masterdata_fvs/
 ```
 
 ### 4. Remote Inference — Replicate

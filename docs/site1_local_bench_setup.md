@@ -54,6 +54,29 @@ exit()
 
 ---
 
+
+## 3.1) Build FAISS indexes with the correct module
+
+In bench console:
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+build_all_fvs()
+```
+
+> This queues background jobs. Monitor worker logs to confirm completion:
+
+```bash
+bench worker --queue long
+```
+
+Required files in **Home/RAG Sources**:
+- `tables.json`
+- `schema.yaml`
+- `master_data.yaml`
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
