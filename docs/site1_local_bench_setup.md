@@ -510,12 +510,26 @@ Expected:
 {'status': 'success', 'message': 'Embedding model downloaded successfully.'}
 ```
 
-If download succeeds but load still fails, run manual LFS pull:
+If download succeeds but load still fails, run manual LFS pull using the actual resolved model path:
 
 ```bash
-cd ~/frappe-bench/apps/changai/changai/changai/model
+cd ~/trackerr
+MODEL_PATH=$(./env/bin/python - <<'PY2'
+import os
+import frappe
+frappe.init(site='site1.local')
+frappe.connect()
+print(frappe.get_app_path('changai', 'changai', 'changai', 'model'))
+frappe.destroy()
+PY2
+)
+echo "$MODEL_PATH"
+cd "$MODEL_PATH"
 git lfs pull
 ```
+
+> Note: if your terminal shows weird prefixes like `[200~`, bracketed paste mode injected extra characters.
+> Re-type commands manually (or paste with Ctrl+Shift+V in a clean prompt).
 
 ### D) Validate embedding loads before enqueueing jobs
 
