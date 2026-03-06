@@ -166,6 +166,90 @@ for fn in ["tables.json", "schema.yaml", "master_data.yaml"]:
     print(fn, "=>", doc)
 ```
 
+
+### B.1) Quick fix when all 3 are `None` (create starter RAG source files)
+
+If all three checks return `None`, run this in **bench console** to generate starter files from shipped assets and upload to `Home/RAG Sources`:
+
+```python
+import json
+import yaml
+import frappe
+from pathlib import Path
+from frappe.utils.file_manager import save_file
+
+app_path = Path(frappe.get_app_path("changai"))
+assets_dir = app_path / "changai" / "api" / "v2" / "assets"
+metaschema_path = assets_dir / "metaschema_clean_v2.json"
+
+with open(metaschema_path, "r", encoding="utf-8") as f:
+    metaschema = json.load(f)  # {table_name: [field1, field2, ...]}
+
+# 1) tables.json
+all_tables = sorted(list(metaschema.keys()))
+tables_json = json.dumps(all_tables, ensure_ascii=False, indent=2)
+
+# 2) schema.yaml
+schema = {
+    "tables": [
+        {
+            "table": t,
+            "module": "ERPNext",
+            "fields": [
+                {"name": fld, "description": ""}
+                for fld in (metaschema.get(t) or [])
+                if isinstance(fld, str) and fld.strip()
+            ],
+        }
+        for t in all_tables
+    ]
+}
+schema_yaml = yaml.safe_dump(schema, sort_keys=False, allow_unicode=True)
+
+# 3) master_data.yaml (starter; replace with your real master entities later)
+master_data = {
+    "data": [
+        {
+            "entity_type": "customer",
+            "entity_id": "CUST-0001",
+            "canonical_name": "Sample Customer",
+            "aliases": ["Sample Cust"],
+            "description": "Starter customer entity",
+        },
+        {
+            "entity_type": "supplier",
+            "entity_id": "SUP-0001",
+            "canonical_name": "Sample Supplier",
+            "aliases": ["Sample Supp"],
+            "description": "Starter supplier entity",
+        },
+        {
+            "entity_type": "item",
+            "entity_id": "ITEM-0001",
+            "canonical_name": "Sample Item",
+            "aliases": ["Sample SKU"],
+            "description": "Starter item entity",
+        },
+    ]
+}
+master_data_yaml = yaml.safe_dump(master_data, sort_keys=False, allow_unicode=True)
+
+# Save into Home/RAG Sources
+save_file("tables.json", tables_json.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
+save_file("schema.yaml", schema_yaml.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
+save_file("master_data.yaml", master_data_yaml.encode("utf-8"), folder="Home/RAG Sources", is_private=1)
+
+frappe.db.commit()
+print("Uploaded: tables.json, schema.yaml, master_data.yaml to Home/RAG Sources")
+```
+
+Now rerun:
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+build_all_fvs()
+```
+
 ### C) Check Error Log for exact failure reason
 
 In Desk **Error Log**, filter for:
