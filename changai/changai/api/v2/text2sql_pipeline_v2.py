@@ -128,6 +128,33 @@ def download_model_from_ui():
             check=True,
             shell=False
         )
+
+        # HF repos frequently store model weights via Git LFS.
+        # Without pulling LFS objects, safetensors files may remain pointer text,
+        # which later causes "SafetensorError: header too large" when loading.
+        try:
+            subprocess.run(["git", "lfs", "install"], check=True, shell=False)
+            subprocess.run(
+                ["git", "lfs", "pull"],
+                check=True,
+                shell=False,
+                cwd=model_path,
+            )
+        except subprocess.CalledProcessError as e:
+            frappe.throw(
+                _(
+                    "Model clone succeeded but Git LFS pull failed. "
+                    "Install Git LFS and run: 'git lfs install' then 'git lfs pull' in {0}."
+                ).format(model_path)
+            )
+        except FileNotFoundError:
+            frappe.throw(
+                _(
+                    "Git LFS is not installed. Install it and rerun model download. "
+                    "Without Git LFS, safetensors files may be invalid pointers."
+                )
+            )
+
         _EMBEDDER_INSTANCE = None
         return {"status": "success", "message": "Embedding model downloaded successfully."}
 

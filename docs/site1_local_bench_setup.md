@@ -467,7 +467,7 @@ If worker logs show errors like:
 - `safetensors_rust.SafetensorError: Error while deserializing header: header too large`
 - `model was created with Sentence Transformers 5.2.3, but you are using 5.1.2`
 
-then your local embedding model files are usually corrupted/incomplete or your Python packages are older than the model metadata.
+then your local embedding model files are usually corrupted/incomplete (often Git LFS pointers instead of real weights) or your Python packages are older than the model metadata.
 
 ### A) Stop worker and update python packages in bench env
 
@@ -475,6 +475,15 @@ then your local embedding model files are usually corrupted/incomplete or your P
 cd ~/frappe-bench
 # Stop running worker with Ctrl+C first
 ./env/bin/pip install -U "sentence-transformers>=5.2.3" "transformers>=4.52" "safetensors>=0.5.3"
+```
+
+### A.1) Ensure Git LFS is installed (required for model weights)
+
+```bash
+cd ~/frappe-bench
+git lfs version
+# if command is missing, install Git LFS then run:
+git lfs install
 ```
 
 ### B) Remove local cached embedding model folder
@@ -499,6 +508,13 @@ Expected:
 
 ```python
 {'status': 'success', 'message': 'Embedding model downloaded successfully.'}
+```
+
+If download succeeds but load still fails, run manual LFS pull:
+
+```bash
+cd ~/frappe-bench/apps/changai/changai/changai/model
+git lfs pull
 ```
 
 ### D) Validate embedding loads before enqueueing jobs

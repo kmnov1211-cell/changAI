@@ -175,6 +175,9 @@ update bench env packages and re-download the embedding model before retrying in
 If you see `cannot import name 'is_flash_attention_requested'` from `transformers.utils.generic`,
 your `sentence-transformers` / `transformers` versions are inconsistent. Reinstall a compatible set in the bench env.
 
+Ensure **Git LFS** is installed before downloading embedding models (`git lfs install`),
+otherwise safetensors files may be cloned as pointer text and fail to load.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  
