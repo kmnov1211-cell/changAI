@@ -128,6 +128,106 @@ for d in ['table_fvs', 'schema_fvs', 'masterdata_fvs']:
 
 ---
 
+
+## 3.2) If pending jobs are empty and index folders are missing
+
+If you see:
+- `-----Pending Jobs-----` (empty)
+- and no `table_fvs/`, `schema_fvs/`, `masterdata_fvs/`
+
+then jobs were likely dequeued and failed quickly.
+
+Run these checks in order.
+
+### A) Confirm required File records exist in Desk
+
+Open **Awesome Bar → File List** and verify under folder `Home/RAG Sources`:
+- `tables.json`
+- `schema.yaml`
+- `master_data.yaml`
+
+If any file is missing, upload it first, then run `build_all_fvs()` again.
+
+### B) Verify file presence from bench console
+
+```bash
+bench --site site1.local console
+```
+
+```python
+import frappe
+for fn in ["tables.json", "schema.yaml", "master_data.yaml"]:
+    doc = frappe.db.get_value(
+        "File",
+        {"file_name": fn, "folder": "Home/RAG Sources"},
+        ["name", "file_url"],
+        as_dict=True,
+    )
+    print(fn, "=>", doc)
+```
+
+### C) Check Error Log for exact failure reason
+
+In Desk **Error Log**, filter for:
+- `Build Table FVS Failed`
+- `Build Schema FVS Failed`
+- `Build Master Data FVS Failed`
+
+### D) Make sure long worker is running while enqueueing
+
+Terminal 1:
+
+```bash
+cd ~/frappe-bench
+bench worker --queue long
+```
+
+Terminal 2:
+
+```bash
+cd ~/frappe-bench
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+build_all_fvs()
+```
+
+### E) Debug by running each job function directly (synchronous)
+
+Use this only for debugging in console:
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import (
+    build_table_fvs_job,
+    build_schema_fvs_job,
+    build_master_data_fvs_job,
+)
+
+build_table_fvs_job()
+build_schema_fvs_job()
+build_master_data_fvs_job()
+```
+
+If one fails, you will immediately see the traceback in console.
+
+### F) Final verification
+
+```bash
+cd ~/frappe-bench
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/table_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/schema_fvs/
+ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/masterdata_fvs/
+```
+
+Each store folder should contain:
+- `index.faiss`
+- `index.pkl`
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
