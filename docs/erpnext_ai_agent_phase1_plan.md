@@ -55,6 +55,8 @@ Keep each module separate so debugging is easy.
 
 You can start with this runnable baseline script in this repository: `scripts/day1_kpi_baseline.py`.
 
+If your bench/site is `site1.local`, follow: `docs/site1_local_bench_setup.md`.
+
 ## Day 2 — API skeleton in Frappe app
 
 Create a new API module (your own endpoint) with one whitelisted method:
