@@ -354,6 +354,91 @@ Each store folder should contain:
 
 ---
 
+
+## 3.3) Right bench-console code (copy/paste)
+
+Use this exact code in `bench --site site1.local console` when files are missing and `save_file` signatures differ:
+
+```python
+import json
+import yaml
+import frappe
+from pathlib import Path
+
+# Build starter content from shipped asset
+app_path = Path(frappe.get_app_path("changai"))
+metaschema_path = app_path / "changai" / "api" / "v2" / "assets" / "metaschema_clean_v2.json"
+with open(metaschema_path, "r", encoding="utf-8") as f:
+    metaschema = json.load(f)  # {table_name: [field1, field2, ...]}
+
+all_tables = sorted(metaschema.keys())
+
+tables_json = json.dumps(all_tables, ensure_ascii=False, indent=2)
+
+schema = {
+    "tables": [
+        {
+            "table": t,
+            "module": "ERPNext",
+            "fields": [
+                {"name": fld, "description": ""}
+                for fld in (metaschema.get(t) or [])
+                if isinstance(fld, str) and fld.strip()
+            ],
+        }
+        for t in all_tables
+    ]
+}
+schema_yaml = yaml.safe_dump(schema, sort_keys=False, allow_unicode=True)
+
+master_data = {
+    "data": [
+        {"entity_type": "customer", "entity_id": "CUST-0001", "canonical_name": "Sample Customer", "aliases": ["Sample Cust"], "description": "Starter customer entity"},
+        {"entity_type": "supplier", "entity_id": "SUP-0001", "canonical_name": "Sample Supplier", "aliases": ["Sample Supp"], "description": "Starter supplier entity"},
+        {"entity_type": "item", "entity_id": "ITEM-0001", "canonical_name": "Sample Item", "aliases": ["Sample SKU"], "description": "Starter item entity"},
+    ]
+}
+master_data_yaml = yaml.safe_dump(master_data, sort_keys=False, allow_unicode=True)
+
+# Version-safe upload via File DocType (avoids save_file signature issues)
+def upsert_rag_file(file_name: str, content: str):
+    existing = frappe.db.get_value(
+        "File",
+        {"file_name": file_name, "folder": "Home/RAG Sources"},
+        "name",
+    )
+    if existing:
+        frappe.delete_doc("File", existing, force=1, ignore_permissions=True)
+
+    frappe.get_doc({
+        "doctype": "File",
+        "file_name": file_name,
+        "folder": "Home/RAG Sources",
+        "is_private": 1,
+        "content": content,
+        "decode": False,
+    }).insert(ignore_permissions=True)
+
+upsert_rag_file("tables.json", tables_json)
+upsert_rag_file("schema.yaml", schema_yaml)
+upsert_rag_file("master_data.yaml", master_data_yaml)
+frappe.db.commit()
+
+for fn in ["tables.json", "schema.yaml", "master_data.yaml"]:
+    print(fn, "=>", frappe.db.get_value("File", {"file_name": fn, "folder": "Home/RAG Sources"}, ["name", "file_url"], as_dict=True))
+
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs())
+```
+
+Then in terminal run:
+
+```bash
+cd ~/frappe-bench
+bench worker --queue long
+```
+
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
