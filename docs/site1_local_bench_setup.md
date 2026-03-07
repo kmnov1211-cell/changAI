@@ -469,12 +469,16 @@ If worker logs show errors like:
 
 then your local embedding model files are usually corrupted/incomplete (often Git LFS pointers instead of real weights) or your Python packages are older than the model metadata.
 
+
+> Important: `changai` pins `sentence-transformers==5.1.2` in `pyproject.toml`.
+> Upgrading only sentence-transformers/transformers can create resolver conflicts and runtime import errors.
+
 ### A) Stop worker and update python packages in bench env
 
 ```bash
 cd ~/frappe-bench
 # Stop running worker with Ctrl+C first
-./env/bin/pip install -U "sentence-transformers>=5.2.3" "transformers>=4.52" "safetensors>=0.5.3"
+./env/bin/pip install -e apps/changai  # reinstall app-pinned dependencies
 ```
 
 ### A.1) Ensure Git LFS is installed (required for model weights)
@@ -592,12 +596,15 @@ cd ~/frappe-bench
 ./env/bin/pip show sentence-transformers transformers langchain-huggingface safetensors tokenizers | sed -n '1,120p'
 ```
 
-### B) Clean reinstall compatible embedding stack
+### B) Re-sync to app-pinned dependency set (recommended)
 
 ```bash
 cd ~/frappe-bench
 ./env/bin/pip uninstall -y sentence-transformers transformers tokenizers safetensors huggingface-hub
-./env/bin/pip install --no-cache-dir   "huggingface-hub>=0.23,<1.0"   "tokenizers>=0.20,<0.22"   "safetensors>=0.5.3"   "transformers>=4.52,<4.58"   "sentence-transformers>=5.2.3"   "langchain-huggingface>=0.1.2"
+./env/bin/pip install -e apps/changai
+
+# optional: if pip resolver keeps stale packages
+./env/bin/pip install --upgrade --force-reinstall -e apps/changai
 ```
 
 ### C) Sanity import test before running worker jobs
@@ -609,6 +616,8 @@ import sentence_transformers, transformers, safetensors
 print('sentence-transformers', sentence_transformers.__version__)
 print('transformers', transformers.__version__)
 print('safetensors', safetensors.__version__)
+
+# should match app constraints (pyproject): sentence-transformers==5.1.2
 PY2
 ```
 
@@ -671,11 +680,11 @@ ls -lah sites/site1.local/private/changai/fvs_stores/erpnext/masterdata_fvs/
 
 Each folder should contain `index.faiss` and `index.pkl`.
 
-### B) Align sentence-transformers to model version (recommended)
+### B) Keep app-pinned versions (recommended for stability)
 
 ```bash
 cd ~/trackerr
-./env/bin/pip install -U "sentence-transformers>=5.2.3" "transformers>=4.52" "safetensors>=0.5.3"
+./env/bin/pip install -e apps/changai  # reinstall app-pinned dependencies
 ```
 
 Then restart worker:

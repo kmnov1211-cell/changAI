@@ -170,10 +170,10 @@ bench worker --queue long
 Then verify each folder contains `index.faiss` and `index.pkl`.
 
 If worker logs show `safetensors_rust.SafetensorError: header too large` or SentenceTransformers version mismatch,
-update bench env packages and re-download the embedding model before retrying index build.
+re-download the embedding model (with Git LFS) and re-sync to app-pinned dependencies (`pip install -e apps/changai`) before retrying index build.
 
 If you see `cannot import name 'is_flash_attention_requested'` from `transformers.utils.generic`,
-your `sentence-transformers` / `transformers` versions are inconsistent. Reinstall a compatible set in the bench env.
+your `sentence-transformers` / `transformers` versions are inconsistent. Re-sync the full app dependency set in bench env (`pip install -e apps/changai`) instead of partial upgrades.
 
 Ensure **Git LFS** is installed before downloading embedding models (`git lfs install`),
 otherwise safetensors files may be cloned as pointer text and fail to load.
