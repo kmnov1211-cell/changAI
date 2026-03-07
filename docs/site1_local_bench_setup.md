@@ -819,7 +819,8 @@ Expected queue URL host/port must match your running Redis instance.
 
 ```bash
 cd ~/trackerr
-ss -ltnp | rg '11006|13006|redis'
+ss -ltnp | grep -E '11006|13006|redis'
+# if grep is unavailable, use: ss -ltnp
 ```
 
 If nothing is listening on the configured queue port, start/restart services:
@@ -830,6 +831,16 @@ bench restart
 # then keep worker running
 bench worker --queue long
 ```
+
+
+If `bench restart` is not managing processes in your setup, run dev stack directly in a separate terminal:
+
+```bash
+cd ~/trackerr
+bench start
+```
+
+Then retry `bench doctor` and enqueue.
 
 ### D) Retry enqueue after Redis is healthy
 
