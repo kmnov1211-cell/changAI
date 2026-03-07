@@ -260,29 +260,57 @@ def _build_and_save_faiss(
 
 
 @frappe.whitelist(allow_guest=False)
-def build_all_fvs() -> Dict[str, Any]:
+def build_all_fvs(run_sync_if_queue_down: int = 0) -> Dict[str, Any]:
     """
     Enqueues 3 separate background jobs to build FAISS vector stores.
+
+    Args:
+        run_sync_if_queue_down: if truthy and Redis queue is unavailable,
+        run jobs synchronously in current process (useful for local debugging).
     """
-    frappe.enqueue(
-        "changai.changai.api.v2.build_cards_faiss_index_v2.build_table_fvs_job",
-        queue="long",
-        timeout=1800,
-    )
-    frappe.enqueue(
-        "changai.changai.api.v2.build_cards_faiss_index_v2.build_schema_fvs_job",
-        queue="long",
-        timeout=1800,
-    )
-    frappe.enqueue(
-        "changai.changai.api.v2.build_cards_faiss_index_v2.build_master_data_fvs_job",
-        queue="long",
-        timeout=1800,
-    )
-    return {
-        "status": "enqueued",
-        "message": "All 3 FVS build jobs have been queued. Check Error Logs for progress.",
-    }
+    try:
+        frappe.enqueue(
+            "changai.changai.api.v2.build_cards_faiss_index_v2.build_table_fvs_job",
+            queue="long",
+            timeout=1800,
+        )
+        frappe.enqueue(
+            "changai.changai.api.v2.build_cards_faiss_index_v2.build_schema_fvs_job",
+            queue="long",
+            timeout=1800,
+        )
+        frappe.enqueue(
+            "changai.changai.api.v2.build_cards_faiss_index_v2.build_master_data_fvs_job",
+            queue="long",
+            timeout=1800,
+        )
+        return {
+            "status": "enqueued",
+            "message": "All 3 FVS build jobs have been queued. Check Error Logs for progress.",
+        }
+    except Exception as e:
+        msg = str(e)
+        if ("Connection refused" in msg or "redis" in msg.lower()) and int(run_sync_if_queue_down or 0):
+            build_table_fvs_job()
+            build_schema_fvs_job()
+            build_master_data_fvs_job()
+            return {
+                "status": "completed_sync",
+                "message": "Redis queue unavailable. Built all 3 FVS stores synchronously.",
+            }
+
+        frappe.throw(
+            "Redis queue is unavailable for enqueue. "
+            "Start/repair Redis (bench doctor, bench restart or bench start) and retry, "
+            "or call build_all_fvs(run_sync_if_queue_down=1) for local synchronous build. "
+            f"Original error: {msg}"
+        )
+
+
+@frappe.whitelist(allow_guest=False)
+def build_all_fvs_sync() -> Dict[str, Any]:
+    """Force synchronous build of all 3 vector stores (no Redis enqueue)."""
+    return build_all_fvs(run_sync_if_queue_down=1)
 
 
 def build_table_fvs_job():

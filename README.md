@@ -141,17 +141,53 @@ Go to **ERPNext → ChangAI Settings**
 ### 3. Build FAISS Indexes (Required)
 
 ```python
-from changai.changai.api.v2.build_schema_entity_faiss_indexes import build_all_indexes
-build_all_indexes()
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+build_all_fvs()
+# If Redis queue is down in local setup:
+# build_all_fvs_sync()
 ```
 
-This creates:
+This enqueues background jobs to build table/schema/master-data FAISS stores.
+
+The source files must be uploaded in **Home/RAG Sources** as:
+- `tables.json`
+- `schema.yaml`
+- `master_data.yaml`
+
+Vector stores are saved under the site path:
 
 ```
-changai/api/fvs_stores/
+sites/<your-site>/private/changai/fvs_stores/erpnext/
+├── table_fvs/
 ├── schema_fvs/
-└── entity_fvs/
+└── masterdata_fvs/
 ```
+
+After running `build_all_fvs()`, keep a long worker running to process queued jobs:
+
+```bash
+bench worker --queue long
+```
+
+Then verify each folder contains `index.faiss` and `index.pkl`.
+
+If worker logs show `safetensors_rust.SafetensorError: header too large` or SentenceTransformers version mismatch,
+re-download the embedding model (with Git LFS) and re-sync to app-pinned dependencies (`pip install -e apps/changai`) before retrying index build.
+
+If you see `cannot import name 'is_flash_attention_requested'` from `transformers.utils.generic`,
+your `sentence-transformers` / `transformers` versions are inconsistent. Re-sync the full app dependency set in bench env (`pip install -e apps/changai`) instead of partial upgrades.
+
+Ensure **Git LFS** is installed before downloading embedding models (`git lfs install`),
+otherwise safetensors files may be cloned as pointer text and fail to load.
+
+If worker logs show `Job OK` but also version/semaphore warnings, prioritize job status and output files first.
+Then align package versions to reduce future instability.
+
+If `build_all_fvs()` raises Redis `Connection refused` from `frappe.enqueue`, fix Redis/bench services first (`bench doctor`, `bench restart`).
+For local emergency debugging you can run synchronously: `build_all_fvs_sync()`.
+If you see `unexpected keyword argument run_sync_if_queue_down`, your bench is running older changai code; pull/update app first.
+
+If Ollama returns `model requires more system memory`, choose a smaller local model (for example `qwen2.5:1.5b`) in ChangAI Settings and re-test.
 
 ### 4. Remote Inference — Replicate
 
