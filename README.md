@@ -181,6 +181,8 @@ otherwise safetensors files may be cloned as pointer text and fail to load.
 If worker logs show `Job OK` but also version/semaphore warnings, prioritize job status and output files first.
 Then align package versions to reduce future instability.
 
+If `build_all_fvs()` raises Redis `Connection refused` from `frappe.enqueue`, fix Redis/bench services first (`bench doctor`, `bench restart`).
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  

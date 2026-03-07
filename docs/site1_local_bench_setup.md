@@ -776,6 +776,80 @@ Expected files:
 
 ---
 
+
+## 3.8) `Connection refused` to Redis while calling `build_all_fvs()`
+
+If console shows errors like:
+- `ConnectionError: Error 111 connecting to 127.0.0.1:11006` (or `13006`)
+- stack trace from `frappe.enqueue` / `redis` / `rq`
+
+this means background job queue backend (Redis) is down or unreachable.
+This is **not related to Ollama URL**.
+
+### A) Check Redis/bench services
+
+```bash
+cd ~/trackerr
+bench doctor
+```
+
+If Redis/queue workers are not healthy, restart bench services:
+
+```bash
+cd ~/trackerr
+bench restart
+```
+
+### B) Validate configured Redis URLs
+
+```bash
+cd ~/trackerr
+./env/bin/python - <<'PY2'
+import json
+from pathlib import Path
+cfg = json.loads(Path('sites/common_site_config.json').read_text())
+for k in ['redis_queue','redis_cache','redis_socketio']:
+    print(k, '=>', cfg.get(k))
+PY2
+```
+
+Expected queue URL host/port must match your running Redis instance.
+
+### C) Verify Redis port is listening
+
+```bash
+cd ~/trackerr
+ss -ltnp | rg '11006|13006|redis'
+```
+
+If nothing is listening on the configured queue port, start/restart services:
+
+```bash
+cd ~/trackerr
+bench restart
+# then keep worker running
+bench worker --queue long
+```
+
+### D) Retry enqueue after Redis is healthy
+
+```bash
+cd ~/trackerr
+bench --site site1.local console
+```
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs())
+```
+
+### E) Important note about Ollama URL
+
+`http://localhost:11434` in ChangAI Settings is for LLM calls.
+FAISS build jobs (`build_all_fvs`) are queued via Redis/RQ and do not depend on Ollama availability.
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
