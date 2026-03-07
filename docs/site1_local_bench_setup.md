@@ -854,6 +854,13 @@ from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
 print(build_all_fvs())
 ```
 
+If Redis is temporarily down and you need a one-time local run, use synchronous fallback in console:
+
+```python
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
+print(build_all_fvs(run_sync_if_queue_down=1))
+```
+
 ### E) Important note about Ollama URL
 
 `http://localhost:11434` in ChangAI Settings is for LLM calls.
