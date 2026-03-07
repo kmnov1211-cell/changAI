@@ -906,7 +906,7 @@ exit;
 
 ## 5) Install dependency for Day‑1 script
 
-From your app repo root (`/workspace/changAI`) or where script exists:
+From your app repo root (for many bench installs: `~/trackerr/apps/changai`) or wherever this repository is cloned:
 
 ```bash
 pip install pymysql
@@ -915,14 +915,15 @@ pip install pymysql
 If using bench env explicitly:
 
 ```bash
-~/frappe-bench/env/bin/pip install pymysql
+~/trackerr/env/bin/pip install pymysql
 ```
 
 ---
 
 ## 6) Export env vars and run Day‑1 KPI baseline
 
-From this repo root (where `scripts/day1_kpi_baseline.py` exists):
+From this repo root (where `scripts/day1_kpi_baseline.py` exists).
+Typical local bench path is `~/trackerr/apps/changai`:
 
 ```bash
 export ERP_DB_HOST=127.0.0.1
@@ -930,7 +931,7 @@ export ERP_DB_PORT=3306
 export ERP_DB_USER=erp_readonly
 export ERP_DB_PASSWORD='StrongPassword@123'
 export ERP_DB_NAME='<DB_NAME>'
-python scripts/day1_kpi_baseline.py
+~/trackerr/env/bin/python scripts/day1_kpi_baseline.py
 ```
 
 Expected output sections:
@@ -946,7 +947,7 @@ Expected output sections:
 ## 7) If you want to run using bench python directly
 
 ```bash
-~/frappe-bench/env/bin/python scripts/day1_kpi_baseline.py
+~/trackerr/env/bin/python scripts/day1_kpi_baseline.py
 ```
 
 ---
@@ -958,7 +959,7 @@ Expected output sections:
 Install with:
 
 ```bash
-~/frappe-bench/env/bin/pip install pymysql
+~/trackerr/env/bin/pip install pymysql
 ```
 
 ### Error: `Access denied for user`
@@ -981,15 +982,24 @@ If table names differ in your ERPNext version/customization, update the SQL in `
 
 ---
 
+If you are not sure where changai repo is on disk, locate it first:
+
+```bash
+cd ~/trackerr
+find apps -maxdepth 2 -type d -name changai
+```
+
+Use the returned directory as your repo root for running the script.
+
 ## 9) Quick command block (copy/paste)
 
 ```bash
-cd /workspace/changAI
-~/frappe-bench/env/bin/pip install pymysql
+cd ~/trackerr/apps/changai
+~/trackerr/env/bin/pip install pymysql
 export ERP_DB_HOST=127.0.0.1
 export ERP_DB_PORT=3306
 export ERP_DB_USER=erp_readonly
 export ERP_DB_PASSWORD='StrongPassword@123'
 export ERP_DB_NAME='<DB_NAME>'
-~/frappe-bench/env/bin/python scripts/day1_kpi_baseline.py
+~/trackerr/env/bin/python scripts/day1_kpi_baseline.py
 ```
