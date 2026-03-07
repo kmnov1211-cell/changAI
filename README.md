@@ -187,6 +187,8 @@ If `build_all_fvs()` raises Redis `Connection refused` from `frappe.enqueue`, fi
 For local emergency debugging you can run synchronously: `build_all_fvs_sync()`.
 If you see `unexpected keyword argument run_sync_if_queue_down`, your bench is running older changai code; pull/update app first.
 
+If Ollama returns `model requires more system memory`, choose a smaller local model (for example `qwen2.5:1.5b`) in ChangAI Settings and re-test.
+
 ### 4. Remote Inference — Replicate
 
 > Replicate deployments **require Docker containers**.  

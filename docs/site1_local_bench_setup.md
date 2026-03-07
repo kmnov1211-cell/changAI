@@ -880,6 +880,46 @@ FAISS build jobs (`build_all_fvs`) are queued via Redis/RQ and do not depend on 
 
 ---
 
+
+## 3.9) Ollama memory error (`model requires more system memory`)
+
+If you get:
+
+- `model requires more system memory (4.3 GiB) than is available (2.0 GiB)`
+
+this is an LLM RAM limitation on your machine, not a FAISS/index issue.
+
+### A) Use a smaller model in ChangAI Settings
+
+In **ChangAI Settings** for local mode, set `local_llm` to a lighter model such as:
+- `qwen2.5:1.5b`
+- `qwen2.5:0.5b`
+- `tinyllama:1.1b`
+
+### B) Pull and test small model directly in Ollama
+
+```bash
+ollama pull qwen2.5:1.5b
+curl http://localhost:11434/api/generate -d '{
+  "model":"qwen2.5:1.5b",
+  "prompt":"Write SQL to count customers in ERPNext",
+  "stream":false
+}'
+```
+
+### C) Keep only one model loaded (free RAM)
+
+```bash
+ollama ps
+# stop running model session by restarting ollama service/process if needed
+```
+
+### D) Optional quality/performance path
+
+If results are weak on very small models, keep FAISS local but move SQL generation to a stronger remote model later (Phase 2).
+
+---
+
 ## 4) Create a read-only DB user (recommended)
 
 Use MariaDB root/admin account:
