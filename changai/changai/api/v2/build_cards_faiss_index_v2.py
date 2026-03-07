@@ -307,6 +307,12 @@ def build_all_fvs(run_sync_if_queue_down: int = 0) -> Dict[str, Any]:
         )
 
 
+@frappe.whitelist(allow_guest=False)
+def build_all_fvs_sync() -> Dict[str, Any]:
+    """Force synchronous build of all 3 vector stores (no Redis enqueue)."""
+    return build_all_fvs(run_sync_if_queue_down=1)
+
+
 def build_table_fvs_job():
     try:
         _, table_path, _, _ = _get_paths()

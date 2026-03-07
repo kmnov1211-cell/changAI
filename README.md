@@ -144,7 +144,7 @@ Go to **ERPNext → ChangAI Settings**
 from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
 build_all_fvs()
 # If Redis queue is down in local setup:
-# build_all_fvs(run_sync_if_queue_down=1)
+# build_all_fvs_sync()
 ```
 
 This enqueues background jobs to build table/schema/master-data FAISS stores.
@@ -184,7 +184,8 @@ If worker logs show `Job OK` but also version/semaphore warnings, prioritize job
 Then align package versions to reduce future instability.
 
 If `build_all_fvs()` raises Redis `Connection refused` from `frappe.enqueue`, fix Redis/bench services first (`bench doctor`, `bench restart`).
-For local emergency debugging you can run synchronously: `build_all_fvs(run_sync_if_queue_down=1)`.
+For local emergency debugging you can run synchronously: `build_all_fvs_sync()`.
+If you see `unexpected keyword argument run_sync_if_queue_down`, your bench is running older changai code; pull/update app first.
 
 ### 4. Remote Inference — Replicate
 

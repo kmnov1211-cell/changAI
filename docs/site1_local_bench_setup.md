@@ -858,7 +858,19 @@ If Redis is temporarily down and you need a one-time local run, use synchronous 
 
 ```python
 from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs
-print(build_all_fvs(run_sync_if_queue_down=1))
+from changai.changai.api.v2.build_cards_faiss_index_v2 import build_all_fvs_sync
+print(build_all_fvs_sync())
+```
+
+
+If you get `TypeError: build_all_fvs() got an unexpected keyword argument 'run_sync_if_queue_down'`,
+your bench is still on older changai code. Update app code and migrate, then retry.
+
+```bash
+cd ~/trackerr
+bench update --apps changai
+bench --site site1.local migrate
+bench restart
 ```
 
 ### E) Important note about Ollama URL
